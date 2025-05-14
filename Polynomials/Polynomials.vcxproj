@@ -120,8 +120,11 @@
     <ClCompile Include="Test data structures\test_unsorted_table.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Data structures\AVL.h" />
+    <ClInclude Include="Data structures\hash_table.h" />
     <ClInclude Include="Data structures\hash_table_chain.h" />
     <ClInclude Include="Data structures\RedBlack_tree.h" />
+    <ClInclude Include="Data structures\sorted_table.h" />
     <ClInclude Include="Data structures\unsorted_table.h" />
     <ClInclude Include="Other\form.h" />
     <ClInclude Include="Other\list.h" />

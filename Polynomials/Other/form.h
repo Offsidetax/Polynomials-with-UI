@@ -1,8 +1,11 @@
 ﻿#pragma once
+#define NOMINMAX
+#include <algorithm>
 
 // Подключаем .NET сборки
 #using <System.dll>
 #using <System.Windows.Forms.dll>
+#using <System.Drawing.dll>
 
 #include <msclr/marshal_cppstd.h>
 #include <vcclr.h>
@@ -12,16 +15,23 @@
 #include "Data structures/unsorted_table.h"
 #include "Data structures/RedBlack_tree.h"
 #include "Data structures/hash_table_chain.h"
+#include "Data structures/hash_table.h"
+#include "Data structures/sorted_table.h"
+#include "Data structures/AVL.h"
 
 // Подключаем нужные пространства имён
 using namespace System;
 using namespace System::Windows::Forms;
+using namespace System::Drawing;
 
 class PolyStorage {
 public:
     TRedBlackTree<std::string, PolinomXYZ<10>> rbTree;
     ChainHashTable<std::string, PolinomXYZ<10>> hashTable;
     UnsortedTable<std::string, PolinomXYZ<10>> unsortedTable;
+    TAVLTree<std::string, PolinomXYZ<10>> avlTree;
+    SortedTable<std::string, PolinomXYZ<10>> sortedTable;
+    //HashTable<std::string, PolinomXYZ<10>> hashTableInserts;
 };
 
 public ref class MainForm : public Form
@@ -47,7 +57,10 @@ private:
     enum class Structure {
         RedBlackTree,
         HashTable,
-        UnsortedTable
+        UnsortedTable,
+        SortedTable,
+        AVLTree,
+        HashTableInserts
     };
 
     Structure currentStructure;
@@ -106,13 +119,17 @@ private:
             this->Text = "Polynomial Interface";
             this->Width = 1200;
             this->Height = 400;
+            this->FormBorderStyle = System::Windows::Forms::FormBorderStyle::FixedSingle;
+            this->MaximizeBox = false;
+            this->BackColor = Color::FromArgb(200, 230, 255);
 
             // ComboBox для выбора структуры данных
             comboStructure = gcnew ComboBox();
-            comboStructure->Items->AddRange(gcnew cli::array<String^> { "Red-Black tree", "Unsorted table", "Hash Table" });
+            comboStructure->Items->AddRange(gcnew cli::array<String^> { "Red-Black tree", "Unsorted table", "Hash Table (Chain method)", "Hash Table (Inserts method)", "Sorted Table", "AVL Tree" });
             comboStructure->SelectedIndex = 0;
             comboStructure->Left = 20;
             comboStructure->Top = 20;
+            comboStructure->DropDownStyle = ComboBoxStyle::DropDownList;
             this->Controls->Add(comboStructure);
 
             // ComboBox для выбора операции над полиномами
@@ -122,6 +139,7 @@ private:
             comboBoxOperation->Left = 940;
             comboBoxOperation->Top = 170;
             comboBoxOperation->Width = 75;
+            comboBoxOperation->DropDownStyle = ComboBoxStyle::DropDownList;
             this->Controls->Add(comboBoxOperation);
 
             // Поле для ввода ключа полинома
@@ -142,14 +160,14 @@ private:
             txtKeySearch = gcnew TextBox();
             txtKeySearch->Left = 620;
             txtKeySearch->Top = 20;
-            txtKeySearch->Width = 200;
+            txtKeySearch->Width = 300;
             this->Controls->Add(txtKeySearch);
 
             ////Поле для ввода ключа удаляемого полинома
             txtKeyDelete = gcnew TextBox();
             txtKeyDelete->Left = 620;
             txtKeyDelete->Top = 60;
-            txtKeyDelete->Width = 200;
+            txtKeyDelete->Width = 300;
             this->Controls->Add(txtKeyDelete);
 
             // Поле для ввода ключа первого полинома в выражении
@@ -179,6 +197,7 @@ private:
             btnAdd->Left = 340;
             btnAdd->Top = 100;
             btnAdd->Click += gcnew EventHandler(this, &MainForm::OnAddClick);
+            btnAdd->BackColor = System::Drawing::Color::GhostWhite;
             this->Controls->Add(btnAdd);
 
             // Кнопка для поиска полинома
@@ -187,6 +206,7 @@ private:
             btnFind->Left = 940;
             btnFind->Top = 20;
             btnFind->Click += gcnew EventHandler(this, &MainForm::btnFind_Click);
+            btnFind->BackColor = System::Drawing::Color::GhostWhite;
             this->Controls->Add(btnFind);
 
             // Кнопка для удаления полинома
@@ -195,6 +215,7 @@ private:
             btnDelete->Left = 940;
             btnDelete->Top = 60;
             btnDelete->Click += gcnew EventHandler(this, &MainForm::btnDelete_Click);
+            btnDelete->BackColor = System::Drawing::Color::GhostWhite;
             this->Controls->Add(btnDelete);
 
             // Кнопка для вычисления выражения
@@ -203,6 +224,7 @@ private:
             btnCalculate->Left = 940;
             btnCalculate->Top = 230;
             btnCalculate->Click += gcnew EventHandler(this, &MainForm::btnCalculate_Click);
+            btnCalculate->BackColor = System::Drawing::Color::GhostWhite;
             this->Controls->Add(btnCalculate);
 
             // ListBox для отображения полиномов
@@ -212,6 +234,76 @@ private:
             listPolys->Width = 500;
             listPolys->Height = 150;
             this->Controls->Add(listPolys);
+
+            Label^ label0 = gcnew Label();
+            label0->Text = "Input key of new polinom: ";
+            label0-> Left = 20;
+            label0->Top = 45;
+            label0->AutoSize = true;          
+            this->Controls->Add(label0);
+
+            Label^ label1 = gcnew Label();
+            label1->Text = "Choose type of data structure: ";
+            label1->Left = 20;
+            label1->Top = 5;
+            label1->AutoSize = true;
+            this->Controls->Add(label1);
+
+            Label^ label2 = gcnew Label();
+            label2->Text = "Input new polinom: ";
+            label2->Left = 20;
+            label2->Top = 85;
+            label2->AutoSize = true;
+            this->Controls->Add(label2);
+
+            Label^ label3 = gcnew Label();
+            label3->Text = "Contents of the current data structure: ";
+            label3->Left = 20;
+            label3->Top = 135;
+            label3->AutoSize = true;
+            this->Controls->Add(label3);
+
+            Label^ label4 = gcnew Label();
+            label4->Text = "Enter the key of the polynomial you want to found: ";
+            label4->Left = 620;
+            label4->Top = 5;
+            label4->AutoSize = true;
+            this->Controls->Add(label4);
+
+            Label^ label5 = gcnew Label();
+            label5->Text = "Enter the key of the polynomial you want to delete: ";
+            label5->Left = 620;
+            label5->Top = 45;
+            label5->AutoSize = true;
+            this->Controls->Add(label5);
+
+            Label^ label6 = gcnew Label();
+            label6->Text = "Input key of first polinom operand: ";
+            label6->Left = 620;
+            label6->Top = 135;
+            label6->AutoSize = true;
+            this->Controls->Add(label6);
+
+            Label^ label7 = gcnew Label();
+            label7->Text = "Input key of second polinom operand: ";
+            label7->Left = 620;
+            label7->Top = 175;
+            label7->AutoSize = true;
+            this->Controls->Add(label7);
+
+            Label^ label8 = gcnew Label();
+            label8->Text = "Result of operation: ";
+            label8->Left = 620;
+            label8->Top = 215;
+            label8->AutoSize = true;
+            this->Controls->Add(label8);
+
+            //Label^ label9 = gcnew Label();
+            //label9->Text = "Choose operation: ";
+            //label9->Left = 970;
+            //label9->Top = 155;
+            //label9->AutoSize = true;
+            //this->Controls->Add(label9);
         }
 
         void OnStructureChanged(Object ^ sender, EventArgs ^ e)
@@ -228,6 +320,15 @@ private:
                 break;
             case 2:
                 currentStructure = Structure::HashTable;
+                break;
+            case 3:
+                currentStructure = Structure::HashTableInserts;
+                break;
+            case 4:
+                currentStructure = Structure::SortedTable;
+                break;
+            case 5:
+                currentStructure = Structure::AVLTree;
                 break;
             default:
                 currentStructure = Structure::RedBlackTree;
@@ -270,8 +371,13 @@ private:
                     case Structure::UnsortedTable:
                         storage->unsortedTable.insert(stdName, poly);
                         break;
+                    case Structure::AVLTree:
+                        storage->avlTree.Insert(stdName, poly);
+                        break;
+                    case Structure::SortedTable:
+                        storage->sortedTable.insert(stdName, poly);
+                        break;
                     }
-
 
                     // Отображаем полином в ListBox
                     listPolys->Items->Add(name + " - " + expr);
@@ -285,14 +391,14 @@ private:
             }
             else
             {
-                MessageBox::Show("Please enter both a name and an expression.", "Input Error", MessageBoxButtons::OK, MessageBoxIcon::Warning);
+                MessageBox::Show("Please enter both a name and a polynomial.", "Input Error", MessageBoxButtons::OK, MessageBoxIcon::Warning);
             }
         }
 
         System::Void btnFind_Click(System::Object^ sender, System::EventArgs^ e) {
             String^ keyManaged = txtKeySearch->Text->Trim();
             if (String::IsNullOrEmpty(keyManaged)) {
-                MessageBox::Show("Введите ключ для поиска.");
+                MessageBox::Show("Enter the key of the required polynomial.", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
                 return;
             }
 
@@ -312,19 +418,27 @@ private:
                 case Structure::HashTable:
                     found = storage->hashTable.find(key);
                     break;
+                case Structure::AVLTree:
+                    if (auto ptr = storage->avlTree.find(key)) {
+                        found = ptr;
+                    }
+                    break;
+                case Structure::SortedTable:
+                    found = storage->sortedTable.find(key);
+                    break;
                 }
 
                 if (found) {
                     std::stringstream ss;
                     ss << *found;
-                    MessageBox::Show(gcnew String(ss.str().c_str()), "Полином найден");
+                    MessageBox::Show(gcnew String(ss.str().c_str()), "Polynomial found");
                 }
                 else {
-                    MessageBox::Show("Полином с таким ключом не найден.");
+                    MessageBox::Show("Polynomial with such key not found.", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
                 }
             }
             catch (const char* msg) {
-                MessageBox::Show(gcnew String(msg), "Ошибка", MessageBoxButtons::OK, MessageBoxIcon::Error);
+                MessageBox::Show(gcnew String(msg), "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
             }
         }
 
@@ -335,7 +449,7 @@ private:
 
             if (String::IsNullOrEmpty(keyManaged))
             {
-                MessageBox::Show("Введите ключ для удаления.");
+                MessageBox::Show("Enter the key of the required polynomial.", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
                 return;
             }
 
@@ -354,17 +468,23 @@ private:
                 case Structure::HashTable:
                     storage->hashTable.remove(key);
                     break;
+                case Structure::AVLTree:
+                    storage->avlTree.remove(key);
+                    break;
+                case Structure::SortedTable:
+                    storage->sortedTable.remove(key);
+                    break;
                 default:
-                    MessageBox::Show("Неизвестная структура данных.");
+                    MessageBox::Show("Incorrect data structure!", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
                     return;
                 }
 
-                MessageBox::Show("Элемент успешно удалён.");
+                MessageBox::Show("Polynomial deleted succefully.");
                 UpdateListBox(); // обновить вывод
             }
             catch (const char* msg)
             {
-                MessageBox::Show(gcnew String(msg), "Ошибка", MessageBoxButtons::OK, MessageBoxIcon::Error);
+                MessageBox::Show(gcnew String(msg), "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
             }
         }
 
@@ -373,7 +493,7 @@ private:
             String^ key2Managed = txtKey2->Text->Trim();
 
             if (String::IsNullOrEmpty(key1Managed) || String::IsNullOrEmpty(key2Managed)) {
-                MessageBox::Show("Введите оба ключа для вычисления.");
+                MessageBox::Show("Please enter both keys to calculate.", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
                 return;
             }
 
@@ -381,7 +501,7 @@ private:
             std::string key2 = msclr::interop::marshal_as<std::string>(key2Managed);
 
             if (comboBoxOperation->SelectedItem == nullptr) {
-                MessageBox::Show("Выберите операцию (сложение, вычитание или умножение).");
+                MessageBox::Show("Select an operation (addition, subtraction or multiplication).", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
                 return;
             }
 
@@ -405,10 +525,18 @@ private:
                     poly1 = storage->hashTable.find(key1);
                     poly2 = storage->hashTable.find(key2);
                     break;
+                case Structure::AVLTree:
+                    poly1 = storage->avlTree.find(key1);
+                    poly2 = storage->avlTree.find(key2);
+                    break;
+                case Structure::SortedTable:
+                    poly1 = storage->sortedTable.find(key1);
+                    poly2 = storage->sortedTable.find(key2);
+                    break;
                 }
 
                 if (!poly1 || !poly2) {
-                    MessageBox::Show("Один или оба полинома не найдены по указанным ключам.");
+                    MessageBox::Show("One or both polynomials were not found for the given keys.", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
                     return;
                 }
 
@@ -421,21 +549,18 @@ private:
                 else if (op == "*")
                     result = *poly1 * *poly2;
                 else {
-                    MessageBox::Show("Недопустимая операция. Используйте +, -, *.");
+                    MessageBox::Show("Invalid operation. Use +, -, *.", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
                     return;
                 }
 
                 std::stringstream ss;
                 ss << result;
+                richTextBox->Clear();
                 richTextBox->AppendText(gcnew String(ss.str().c_str()));
                 richTextBox->AppendText("\n");
             }
             catch (const char* msg) {
-                MessageBox::Show(gcnew String(msg), "Ошибка", MessageBoxButtons::OK, MessageBoxIcon::Error);
+                MessageBox::Show(gcnew String(msg), "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
             }
         }
-
-
-
-
 };
