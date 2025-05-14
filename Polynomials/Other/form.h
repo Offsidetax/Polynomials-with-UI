@@ -31,7 +31,7 @@ public:
     UnsortedTable<std::string, PolinomXYZ<10>> unsortedTable;
     TAVLTree<std::string, PolinomXYZ<10>> avlTree;
     SortedTable<std::string, PolinomXYZ<10>> sortedTable;
-    //HashTable<std::string, PolinomXYZ<10>> hashTableInserts;
+    HashTable<std::string, PolinomXYZ<10>> hashTableInserts;
 };
 
 public ref class MainForm : public Form
@@ -377,6 +377,9 @@ private:
                     case Structure::SortedTable:
                         storage->sortedTable.insert(stdName, poly);
                         break;
+                    case Structure::HashTableInserts:
+                        storage->hashTableInserts.insert(stdName, poly);
+                        break;
                     }
 
                     // Отображаем полином в ListBox
@@ -426,6 +429,9 @@ private:
                 case Structure::SortedTable:
                     found = storage->sortedTable.find(key);
                     break;
+                case Structure::HashTableInserts:
+                    found = storage->hashTableInserts.find(key);
+                    break;
                 }
 
                 if (found) {
@@ -473,6 +479,9 @@ private:
                     break;
                 case Structure::SortedTable:
                     storage->sortedTable.remove(key);
+                    break;
+                case Structure::HashTableInserts:
+                    storage->hashTableInserts.remove(key);
                     break;
                 default:
                     MessageBox::Show("Incorrect data structure!", "Error", MessageBoxButtons::OK, MessageBoxIcon::Error);
@@ -532,6 +541,10 @@ private:
                 case Structure::SortedTable:
                     poly1 = storage->sortedTable.find(key1);
                     poly2 = storage->sortedTable.find(key2);
+                    break;
+                case Structure::HashTableInserts:
+                    poly1 = storage->hashTableInserts.find(key1);
+                    poly2 = storage->hashTableInserts.find(key2);
                     break;
                 }
 
